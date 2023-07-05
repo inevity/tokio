@@ -339,6 +339,7 @@ impl Runtime {
             "block_on",
             None,
             crate::runtime::task::Id::next().as_u64(),
+            self.handle.id().as_nozerou64(),
         );
 
         let _enter = self.enter();

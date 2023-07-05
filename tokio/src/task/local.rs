@@ -909,7 +909,13 @@ impl Context {
         F::Output: 'static,
     {
         let id = crate::runtime::task::Id::next();
-        let future = crate::util::trace::task(future, "local", name, id.as_u64());
+        let future = crate::util::trace::task(
+            future,
+            "local",
+            name,
+            id.as_u64(),
+            self.shared.local_state.owned.id,
+        );
 
         // Safety: called from the thread that owns the `LocalSet`
         let (handle, notified) = {
