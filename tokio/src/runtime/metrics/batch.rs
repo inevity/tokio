@@ -129,9 +129,20 @@ impl MetricsBatch {
     }
 
     /// Stop polling an individual task
-    pub(crate) fn end_poll(&mut self) {
+    #[track_caller]
+    pub(crate) fn end_poll(&mut self, id: u64) {
         if let Some(poll_timer) = &mut self.poll_timer {
-            let elapsed = duration_as_u64(poll_timer.poll_started_at.elapsed());
+            let elapsed = poll_timer.poll_started_at.elapsed();
+            #[cfg(feature = "tracing")]
+            if elapsed.gt(&Duration::from_millis(10)) {
+                tracing::error!("tokio find a task poll time beyond 10ms, taskid{}", id);
+                //                panic!("tokio find a task poll time beyond 10ms, taskid{}", id);
+            }
+
+            #[cfg(not(feature = "tracing"))]
+            let _ = id;
+
+            let elapsed = duration_as_u64(elapsed);
             poll_timer.poll_counts.measure(elapsed, 1);
         }
     }

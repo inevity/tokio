@@ -301,8 +301,13 @@ impl Handle {
         let future = super::task::trace::Trace::root(future);
 
         #[cfg(all(tokio_unstable, feature = "tracing"))]
-        let future =
-            crate::util::trace::task(future, "block_on", None, super::task::Id::next().as_u64());
+        let future = crate::util::trace::task(
+            future,
+            "block_on",
+            None,
+            super::task::Id::next().as_u64(),
+            self.id().as_nozerou64(),
+        );
 
         // Enter the runtime context. This sets the current driver handles and
         // prevents blocking an existing runtime.
@@ -327,7 +332,8 @@ impl Handle {
         ))]
         let future = super::task::trace::Trace::root(future);
         #[cfg(all(tokio_unstable, feature = "tracing"))]
-        let future = crate::util::trace::task(future, "task", _name, id.as_u64());
+        let future =
+            crate::util::trace::task(future, "task", _name, id.as_u64(), self.id().as_nozerou64());
         self.inner.spawn(future, id)
     }
 
