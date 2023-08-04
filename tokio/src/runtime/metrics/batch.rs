@@ -171,10 +171,10 @@ impl MetricsBatch {
                         }
                         //                         "none" => todo!(),
                         //                         "" => todo!(),
-                        &_ => todo!(),
+                        &_ => ,
                     }
                 }
-                Err(std::env::VarError::NotPresent) => todo!(),
+                Err(std::env::VarError::NotPresent) => ,
                 Err(std::env::VarError::NotUnicode(e)) => {
                     panic!(
                         "\"{}\" must be valid unicode, error: {:?}",
