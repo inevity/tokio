@@ -141,7 +141,6 @@ impl MetricsBatch {
                 .and_then(|v| v.parse::<u64>().ok())
                 .unwrap_or(100);
 
-
             match std::env::var(ENV_DEBUG_PANIC) {
                 Ok(s) => {
                     match s.as_str() {
