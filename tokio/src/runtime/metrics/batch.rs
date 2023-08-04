@@ -133,16 +133,16 @@ impl MetricsBatch {
     pub(crate) fn end_poll(&mut self, id: u64) {
         if let Some(poll_timer) = &mut self.poll_timer {
             let elapsed = poll_timer.poll_started_at.elapsed();
-            // 1 rt and unstable -- runtime metric  
+            // 1 rt and unstable -- runtime metric
             //
-            // 2 rt and unstable and enable pollcount_histogram, so enter this end_poll 
+            // 2 rt and unstable and enable pollcount_histogram, so enter this end_poll
             // so genbu need a env var ENABLE_POLL_TIME, just enable here.
-            
+
             // 3 now our change: based 2(rtmetric and pollcount_histogram)
-            // to log poll time or panic long poll, gnebu need a env DEBUG_PANIC,first parse, 
+            // to log poll time or panic long poll, gnebu need a env DEBUG_PANIC,first parse,
             // pass to here(by env, not code,so still need env get)
             // a. first parse, same as parse below.
-            // if panic, log, then to override ENABLE_POLL_TIME( is it nessary ?) 
+            // if panic, log, then to override ENABLE_POLL_TIME( is it nessary ?)
             // if none or "", the no those poll time check!!!
 
             //TODO env var cache once enter? no consider perf in this case
@@ -158,10 +158,13 @@ impl MetricsBatch {
                                 panic!("tokio find a task poll time beyond 10ms, taskid{}", id);
                             }
                         }
-                        "log" =>  {
+                        "log" => {
                             if elapsed.gt(&Duration::from_millis(10)) {
                                 #[cfg(feature = "tracing")]
-                                tracing::error!("tokio find a task poll time beyond 10ms, taskid{}", id);
+                                tracing::error!(
+                                    "tokio find a task poll time beyond 10ms, taskid{}",
+                                    id
+                                );
                                 #[cfg(not(feature = "tracing"))]
                                 let _ = id;
                             }
@@ -179,31 +182,31 @@ impl MetricsBatch {
                 }
             }
 
-           // #[cfg(feature = "tracing")]
-           // if elapsed.gt(&Duration::from_millis(10)) {
-           //     //TODO env var cache once enter? no consider perf in this case
-           //     const ENV_DEBUG_PANIC: &str = "DEBUG_PANIC";
-           //     match std::env::var(ENV_DEBUG_PANIC) {
-           //         Ok(s) => {
-           //             match s.as_str() {
-           //                 "panic" => panic!("tokio find a task poll time beyond 10ms, taskid{}", id),
-           //                 "log" =>   tracing::error!("tokio find a task poll time beyond 10ms, taskid{}", id),
-           //                 "none" => todo!(),
-           //                 "" => todo!(),
-           //             }
-           //         }
-           //         Err(std::env::VarError::NotPresent) => todo!(),
-           //         Err(std::env::VarError::NotUnicode(e)) => {
-           //             panic!(
-           //                 "\"{}\" must be valid unicode, error: {:?}",
-           //                 ENV_DEBUG_PANIC, e
-           //             )
-           //         }
-           //     }
-           // }
+            // #[cfg(feature = "tracing")]
+            // if elapsed.gt(&Duration::from_millis(10)) {
+            //     //TODO env var cache once enter? no consider perf in this case
+            //     const ENV_DEBUG_PANIC: &str = "DEBUG_PANIC";
+            //     match std::env::var(ENV_DEBUG_PANIC) {
+            //         Ok(s) => {
+            //             match s.as_str() {
+            //                 "panic" => panic!("tokio find a task poll time beyond 10ms, taskid{}", id),
+            //                 "log" =>   tracing::error!("tokio find a task poll time beyond 10ms, taskid{}", id),
+            //                 "none" => todo!(),
+            //                 "" => todo!(),
+            //             }
+            //         }
+            //         Err(std::env::VarError::NotPresent) => todo!(),
+            //         Err(std::env::VarError::NotUnicode(e)) => {
+            //             panic!(
+            //                 "\"{}\" must be valid unicode, error: {:?}",
+            //                 ENV_DEBUG_PANIC, e
+            //             )
+            //         }
+            //     }
+            // }
 
-           // #[cfg(not(feature = "tracing"))]
-           // let _ = id;
+            // #[cfg(not(feature = "tracing"))]
+            // let _ = id;
 
             let elapsed = duration_as_u64(elapsed);
             poll_timer.poll_counts.measure(elapsed, 1);
@@ -215,17 +218,16 @@ impl MetricsBatch {
     }
 }
 
-
 // pub(crate) mod sys {
 //     #[cfg(feature = "rt-multi-thread")]
 //     pub(crate) fn num_cpus() -> usize {
 //         1
 //     }
-// 
+//
 //     #[cfg(not(feature = "rt-multi-thread"))]
 //     pub(crate) fn num_cpus() -> usize {
 //         const ENV_DEBUG_PANIC: &str = "DEBUG_PANIC";
-// 
+//
 //         match std::env::var(ENV_DEBUG_PANIC) {
 //             Ok(s) => {
 //                 match s.as_str() {
@@ -234,7 +236,7 @@ impl MetricsBatch {
 //                     "none" => todo!(),
 //                     "" => todo!(),
 //                 }
-// 
+//
 //             Err(std::env::VarError::NotPresent) => todo!(),
 //             Err(std::env::VarError::NotUnicode(e)) => {
 //                 panic!(
