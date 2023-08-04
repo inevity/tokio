@@ -169,8 +169,9 @@ impl MetricsBatch {
                                 let _ = id;
                             }
                         }
-                        "none" => todo!(),
-                        "" => todo!(),
+                        //                         "none" => todo!(),
+                        //                         "" => todo!(),
+                        &_ => todo!(),
                     }
                 }
                 Err(std::env::VarError::NotPresent) => todo!(),
