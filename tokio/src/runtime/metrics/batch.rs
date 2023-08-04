@@ -171,7 +171,7 @@ impl MetricsBatch {
                         }
                         //                         "none" => todo!(),
                         //                         "" => todo!(),
-                        &_ => ,
+                        &_ => (),
                     }
                 }
                 Err(std::env::VarError::NotPresent) => ,
