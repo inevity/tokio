@@ -133,18 +133,27 @@ impl MetricsBatch {
     pub(crate) fn end_poll(&mut self, id: u64) {
         if let Some(poll_timer) = &mut self.poll_timer {
             let elapsed = poll_timer.poll_started_at.elapsed();
+            // TODO cache
             const ENV_DEBUG_PANIC: &str = "DEBUG_PANIC";
+            const ENV_POLL_TIME_MAX: &str = "POLL_TIME_MAX";
+            let poll_time_max = std::env::var(ENV_POLL_TIME_MAX)
+                .ok()
+                .and_then(|v| v.parse::<u64>().ok())
+                .unwrap_or(100);
+
+
             match std::env::var(ENV_DEBUG_PANIC) {
                 Ok(s) => {
                     match s.as_str() {
                         "panic" => {
                             //TODO dedup the if stmt
-                            if elapsed.gt(&Duration::from_millis(10)) {
+                            //TODO if block_on task, poll time false hit?
+                            if elapsed.gt(&Duration::from_millis(poll_time_max)) {
                                 panic!("tokio find a task poll time beyond 10ms, taskid{}", id);
                             }
                         }
                         "log" => {
-                            if elapsed.gt(&Duration::from_millis(10)) {
+                            if elapsed.gt(&Duration::from_millis(poll_time_max)) {
                                 #[cfg(feature = "tracing")]
                                 tracing::error!(
                                     "tokio find a task poll time beyond 10ms, taskid{}",
