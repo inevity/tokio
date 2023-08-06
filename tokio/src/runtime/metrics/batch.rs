@@ -147,15 +147,17 @@ impl MetricsBatch {
                         "panic" => {
                             //TODO dedup the if stmt
                             //TODO if block_on task, poll time false hit?
-                            if elapsed.gt(&Duration::from_millis(poll_time_max)) {
-                                panic!("tokio find a task poll time beyond 10ms, taskid{}", id);
-                            }
+                            assert!(
+                                elapsed.gt(&Duration::from_millis(poll_time_max)),
+                                "tokio find a task poll time beyond {poll_time_max}ms, taskid {id}",
+                            );
                         }
                         "log" => {
                             if elapsed.gt(&Duration::from_millis(poll_time_max)) {
                                 #[cfg(feature = "tracing")]
                                 tracing::error!(
-                                    "tokio find a task poll time beyond 10ms, taskid{}",
+                                    "tokio find a task poll time beyond {} ms, taskid{}",
+                                    poll_time_max,
                                     id
                                 );
                                 #[cfg(not(feature = "tracing"))]
