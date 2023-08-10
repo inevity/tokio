@@ -182,6 +182,8 @@ cfg_rt! {
         T::Output: Send + 'static,
     {
         use crate::runtime::{context, task};
+        #[cfg(tokio_unstable)]
+        use crate::runtime::scheduler;
 
         #[cfg(all(
             tokio_unstable,
@@ -196,9 +198,23 @@ cfg_rt! {
         ))]
         let future = task::trace::Trace::root(future);
         let id = task::Id::next();
-        let task = crate::util::trace::task(future, "task", name, id.as_u64());
 
-        match context::with_current(|handle| handle.spawn(task, id)) {
+        match context::with_current(|handle| {
+            #[cfg(tokio_unstable)]
+            let owned_id = match &handle {
+                scheduler::Handle::CurrentThread(handle) => handle.owned_id(),
+                #[cfg(all(feature = "rt-multi-thread", not(target_os = "wasi")))]
+                scheduler::Handle::MultiThread(handle) => handle.owned_id(),
+                #[cfg(all(feature = "rt-multi-thread", not(target_os = "wasi")))]
+                scheduler::Handle::MultiThreadAlt(handle) => handle.owned_id(),
+
+            };
+            #[cfg(not(tokio_unstable))]
+            let owned_id = std::num::NonZeroU64::new(1).unwrap();
+
+            let task = crate::util::trace::task(future, "task", name, id.as_u64(), owned_id);
+            handle.spawn(task, id)
+        }) {
             Ok(join_handle) => join_handle,
             Err(e) => panic!("{}", e),
         }

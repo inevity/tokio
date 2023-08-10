@@ -399,6 +399,27 @@ impl<S: Schedule> LocalNotified<S> {
         mem::forget(self);
         raw.poll();
     }
+    // TODO why No need cfg or feature
+    pub(crate) fn get_id(&self) -> Id {
+        // TODO  Why no need ref?
+        let task = &self.task.raw;
+        // Safety: The header pointer is valid.
+        unsafe { Header::get_id(task.header_ptr()) }
+    }
+
+    #[cfg_attr(tokio_unstable, allow(dead_code))]
+    #[cfg(all(tokio_unstable, feature = "tracing"))]
+    pub(crate) fn get_tracing_id(&self) -> u64 {
+        let task = &self.task.raw;
+        // Safety: The header pointer is valid.
+        unsafe {
+            if let Some(id) = Header::get_tracing_id(&task.header_ptr()) {
+                id.into_u64()
+            } else {
+                0u64
+            }
+        }
+    }
 }
 
 impl<S: Schedule> UnownedTask<S> {

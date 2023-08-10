@@ -123,7 +123,7 @@ impl Stats {
     }
 
     pub(crate) fn end_poll(&mut self) {
-        self.batch.end_poll();
+        self.batch.end_poll(0);
     }
 
     pub(crate) fn incr_steal_count(&mut self, by: u16) {
