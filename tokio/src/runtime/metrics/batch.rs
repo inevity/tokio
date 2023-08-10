@@ -2,6 +2,10 @@ use crate::runtime::metrics::{HistogramBatch, WorkerMetrics};
 
 use std::sync::atomic::Ordering::Relaxed;
 use std::time::{Duration, Instant};
+use std::sync::OnceLock;
+use std::env::VarError;
+static POLL_VARS: OnceLock<(Result<String, VarError>, u64)> = OnceLock::new();
+
 
 pub(crate) struct MetricsBatch {
     /// Number of times the worker parked.
@@ -136,12 +140,17 @@ impl MetricsBatch {
             // TODO cache
             const ENV_DEBUG_PANIC: &str = "DEBUG_PANIC";
             const ENV_POLL_TIME_MAX: &str = "POLL_TIME_MAX";
-            let poll_time_max = std::env::var(ENV_POLL_TIME_MAX)
-                .ok()
-                .and_then(|v| v.parse::<u64>().ok())
-                .unwrap_or(100);
+            let poll_vars: &(Result<String, VarError>, u64) = POLL_VARS.get_or_init(|| {
+                let poll_time_max = std::env::var(ENV_POLL_TIME_MAX)
+                    .ok()
+                    .and_then(|v| v.parse::<u64>().ok())
+                    .unwrap_or(100);
+                let debug_panic = std::env::var(ENV_DEBUG_PANIC);
+                (debug_panic, poll_time_max)
+            });
 
-            match std::env::var(ENV_DEBUG_PANIC) {
+
+            match &poll_vars.0 {
                 Ok(s) => {
                     match s.as_str() {
                         "panic" => {
