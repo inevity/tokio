@@ -43,7 +43,7 @@ impl MetricsBatch {
     pub(crate) fn start_processing_scheduled_tasks(&mut self) {}
     pub(crate) fn end_processing_scheduled_tasks(&mut self) {}
     pub(crate) fn start_poll(&mut self) {}
-    pub(crate) fn end_poll(&mut self) {}
+    pub(crate) fn end_poll(&mut self, _id: u64) {}
 }
 
 cfg_rt_multi_thread! {

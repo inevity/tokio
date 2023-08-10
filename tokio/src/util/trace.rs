@@ -7,12 +7,13 @@ cfg_trace! {
         use pin_project_lite::pin_project;
         use std::future::Future;
         pub(crate) use tracing::instrument::Instrumented;
+        use std::num::NonZeroU64;
 
         #[inline]
         #[track_caller]
-        pub(crate) fn task<F>(task: F, kind: &'static str, name: Option<&str>, id: u64) -> Instrumented<F> {
+        pub(crate) fn task<F>(task: F, kind: &'static str, name: Option<&str>, id: u64, runtime_id: NonZeroU64) -> Instrumented<F> {
             #[track_caller]
-            fn get_span(kind: &'static str, name: Option<&str>, id: u64) -> tracing::Span {
+            fn get_span(kind: &'static str, name: Option<&str>, id: u64, runtime_id: NonZeroU64) -> tracing::Span {
                 let location = std::panic::Location::caller();
                 tracing::trace_span!(
                     target: "tokio::task",
@@ -23,19 +24,31 @@ cfg_trace! {
                     loc.file = location.file(),
                     loc.line = location.line(),
                     loc.col = location.column(),
+                    //TODO tid maybe steal ,task.id new hardcode, not get curretn_task id must in
+                    //the task running.
+                    tid = ?crate::runtime::context::thread_id().unwrap(),
+                    rtid = runtime_id.get(),
                 )
             }
             use tracing::instrument::Instrument;
-            let span = get_span(kind, name, id);
+            let span = get_span(kind, name, id, runtime_id);
             task.instrument(span)
         }
 
         pub(crate) fn async_op<P,F>(inner: P, resource_span: tracing::Span, source: &str, poll_op_name: &'static str, inherits_child_attrs: bool) -> InstrumentedAsyncOp<F>
         where P: FnOnce() -> F {
             resource_span.in_scope(|| {
-                let async_op_span = tracing::trace_span!("runtime.resource.async_op", source = source, inherits_child_attrs = inherits_child_attrs);
+                let async_op_span = tracing::trace_span!("runtime.resource.async_op", source = source, inherits_child_attrs = inherits_child_attrs,
+                    tid = ?crate::runtime::context::thread_id().unwrap(),
+                    //TODO use pass or context get
+                    rtid = ?crate::runtime::context::thread_id().unwrap(),
+                                                         );
                 let enter = async_op_span.enter();
-                let async_op_poll_span = tracing::trace_span!("runtime.resource.async_op.poll");
+                let async_op_poll_span = tracing::trace_span!("runtime.resource.async_op.poll",
+                    tid = ?crate::runtime::context::thread_id().unwrap(),
+                    //TODO use pass or context get
+                    rtid = ?crate::runtime::context::thread_id().unwrap(),
+                                                              );
                 let inner = inner();
                 drop(enter);
                 let tracing_ctx = AsyncOpTracingCtx {
@@ -95,8 +108,9 @@ cfg_time! {
 
 cfg_not_trace! {
     cfg_rt! {
+        use std::num::NonZeroU64;
         #[inline]
-        pub(crate) fn task<F>(task: F, _: &'static str, _name: Option<&str>, _: u64) -> F {
+        pub(crate) fn task<F>(task: F, _: &'static str, _name: Option<&str>, _: u64, _: NonZeroU64 ) -> F {
             // nop
             task
         }

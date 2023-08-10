@@ -338,10 +338,16 @@ fn wake_deferred_tasks_and_free(context: &Context) {
 impl Context {
     /// Execute the closure with the given scheduler core stored in the
     /// thread-local context.
-    fn run_task<R>(&self, mut core: Box<Core>, f: impl FnOnce() -> R) -> (Box<Core>, R) {
+    #[track_caller]
+    fn run_task<R>(
+        &self,
+        mut core: Box<Core>,
+        f: impl FnOnce() -> R,
+        id: crate::runtime::task::Id,
+    ) -> (Box<Core>, R) {
         core.metrics.start_poll();
         let mut ret = self.enter(core, || crate::runtime::coop::budget(f));
-        ret.0.metrics.end_poll();
+        ret.0.metrics.end_poll(id.as_u64());
         ret
     }
 
@@ -701,10 +707,14 @@ impl CoreGuard<'_> {
                     };
 
                     let task = context.handle.shared.owned.assert_owner(task);
-
-                    let (c, _) = context.run_task(core, || {
-                        task.run();
-                    });
+                    let id = task.get_id();
+                    let (c, _) = context.run_task(
+                        core,
+                        || {
+                            task.run();
+                        },
+                        id,
+                    );
 
                     core = c;
                 }

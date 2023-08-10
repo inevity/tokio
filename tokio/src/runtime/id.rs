@@ -44,3 +44,9 @@ impl fmt::Display for Id {
         self.0.fmt(f)
     }
 }
+impl Id {
+    #[cfg(feature = "tracing")]
+    pub(crate) fn as_nozerou64(&self) -> NonZeroU64 {
+        self.0
+    }
+}
